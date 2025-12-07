@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe - Country Battle</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a polished look, prioritizing responsiveness */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 25%, #3b82f6 50%, #60a5fa 75%, #93c5fd 100%);
+            background-size: 400% 400%;
+            animation: gradient-shift 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .game-container {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(59, 130, 246, 0.2);
+            max-width: 90vw;
+            width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: float 6s ease-in-out infinite;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+        }
+
+        .cell {
+            background: linear-gradient(145deg, #5a6d8a, #3e4d63);
+            border-radius: 0.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            height: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            padding: 0.5rem;
+        }
+
+        .cell img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .cell:hover::before {
+            left: 100%;
+        }
+
+        .cell:hover:not(.x):not(.o) {
+            background: linear-gradient(145deg, #3b82f6, #2563eb);
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 8px 15px rgba(59, 130, 246, 0.5);
+        }
+
+        .cell:active {
+            transform: scale(0.95);
+        }
+
+        /* Styling for X and O */
+        .cell.x { 
+            animation: pop-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cell.o { 
+            animation: pop-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes pop-in {
+            0% { 
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(10deg);
+            }
+            100% { 
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        /* Style for winning cells */
+        .cell.win {
+            background-color: #10b981;
+            animation: pulse-win 0.5s infinite alternate;
+        }
+
+        @keyframes pulse-win {
+            from { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            to { box-shadow: 0 0 10px 5px rgba(16, 185, 129, 0.9); }
+        }
+
+        /* Style for cells that will be removed next */
+        .cell.will-remove {
+            background-color: #fbbf24;
+            animation: warning-pulse 2s ease-in-out infinite alternate;
+            border: 2px solid #f59e0b;
+        }
+
+        @keyframes warning-pulse {
+            from { 
+                box-shadow: 0 0 8px 3px rgba(251, 191, 36, 0.4);
+                opacity: 0.85;
+            }
+            to { 
+                box-shadow: 0 0 12px 5px rgba(251, 191, 36, 0.6);
+                opacity: 0.95;
+            }
+        }
+
+        /* Button animations */
+        button {
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        /* Title animation */
+        h1 {
+            animation: title-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes title-glow {
+            0%, 100% { 
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
+                             0 0 20px rgba(59, 130, 246, 0.5),
+                             0 0 30px rgba(239, 68, 68, 0.3);
+            }
+            50% { 
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.8),
+                             0 0 30px rgba(59, 130, 246, 0.8),
+                             0 0 40px rgba(239, 68, 68, 0.5),
+                             0 0 50px rgba(59, 130, 246, 0.3);
+            }
+        }
+
+        /* Dedication section styling */
+        .dedication {
+            animation: fade-in-up 1s ease-out;
+        }
+
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Status message animation */
+        #status-message {
+            animation: slide-in 0.5s ease-out;
+        }
+
+        @keyframes slide-in {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Board fade-in animation */
+        .board {
+            animation: board-appear 0.6s ease-out;
+        }
+
+        @keyframes board-appear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Popup Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fade-in 0.3s ease-out;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, #1e293b, #334155);
+            padding: 3rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            animation: scale-in 0.3s ease-out;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+        }
+
+        @keyframes scale-in {
+            from {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Utility classes for responsive text sizes */
+        @media (max-width: 480px) {
+            .cell { font-size: 3rem; }
+            .game-container { padding: 1.5rem; width: 95vw; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container" class="game-container">
+    <h1 class="text-3xl font-extrabold text-white mb-4 text-center" style="background: linear-gradient(90deg, #ef4444, #3b82f6, #60a5fa, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+        JAA TAAA<br>
+        Tic-Tac-Toe
+    </h1>
+    
+    <!-- Dedication -->
+    <div class="dedication text-center mb-6 px-4">
+        <p class="text-lg text-slate-200 italic" style="text-shadow: 0 0 10px rgba(59, 130, 246, 0.4);">
+             <span class="font-semibold" style="background: linear-gradient(90deg, #3b82f6, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></span> 
+        </p>
+    </div>
+    
+    <!-- Game Mode Selection -->
+    <div id="mode-selection" class="mb-6 w-full">
+        <p class="text-white text-center mb-3 font-semibold text-xl">Select Game Mode</p>
+        <div class="flex gap-3 justify-center flex-wrap">
+            <button id="vs-ai-btn" class="px-6 py-3 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-110" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);">
+                🤖 Play vs AI
+            </button>
+            <button id="two-player-btn" class="px-6 py-3 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-110" style="background: linear-gradient(135deg, #10b981, #34d399); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.5);">
+                👥 Two Players
+            </button>
+        </div>
+    </div>
+
+    <!-- Country Selection for Player 1 -->
+    <div id="country-selection" class="mb-6 w-full" style="display: none;">
+        <p class="text-white text-center mb-3 font-semibold text-lg" id="player-selection-text">Select Your Country</p>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+            <button class="country-btn px-3 py-2 text-white text-sm font-bold rounded-lg transition-all duration-300 transform hover:scale-105" data-country="Bangladesh" style="background: linear-gradient(135deg, #006747, #00a859); box-shadow: 0 4px 10px rgba(0, 103, 71, 0.5);">
+                🇧🇩 Bangladesh
+            </button>
+            <button class="country-btn px-3 py-2 text-white text-sm font-bold rounded-lg transition-all duration-300 transform hover:scale-105" data-country="China" style="background: linear-gradient(135deg, #de2910, #ff3d00); box-shadow: 0 4px 10px rgba(222, 41, 16, 0.5);">
+                🇨🇳 China
+            </button>
+            <button class="country-btn px-3 py-2 text-white text-sm font-bold rounded-lg transition-all duration-300 transform hover:scale-105" data-country="Dick" style="background: linear-gradient(135deg, #7c3aed, #a78bfa); box-shadow: 0 4px 10px rgba(124, 58, 237, 0.5);">
+                🎭 Dick
+            </button>
+            <button class="country-btn px-3 py-2 text-white text-sm font-bold rounded-lg transition-all duration-300 transform hover:scale-105" data-country="India" style="background: linear-gradient(135deg, #ff9933, #138808); box-shadow: 0 4px 10px rgba(255, 153, 51, 0.5);">
+                🇮🇳 India
+            </button>
+            <button class="country-btn px-3 py-2 text-white text-sm font-bold rounded-lg transition-all duration-300 transform hover:scale-105" data-country="North Korea" style="background: linear-gradient(135deg, #024fa2, #ed1c27); box-shadow: 0 4px 10px rgba(2, 79, 162, 0.5);">
+                🇰🇵 N. Korea
+            </button>
+            <button class="country-btn px-3 py-2 text-white text-sm font-bold rounded-lg transition-all duration-300 transform hover:scale-105" data-country="Russia" style="background: linear-gradient(135deg, #0039a6, #d52b1e); box-shadow: 0 4px 10px rgba(0, 57, 166, 0.5);">
+                🇷🇺 Russia
+            </button>
+            <button class="country-btn px-3 py-2 text-white text-sm font-bold rounded-lg transition-all duration-300 transform hover:scale-105 col-span-2" data-country="USA" style="background: linear-gradient(135deg, #b22234, #3c3b6e); box-shadow: 0 4px 10px rgba(178, 34, 52, 0.5);">
+                🇺🇸 USA
+            </button>
+        </div>
+        <button id="random-opponent-btn" class="w-full px-6 py-3 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 mb-2" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.5); display: none;">
+            🎲 Random Opponent
+        </button>
+        <button id="back-to-mode-btn" class="w-full px-4 py-2 text-white text-sm font-bold rounded-lg transition-all duration-300 transform hover:scale-105" style="background: linear-gradient(135deg, #64748b, #94a3b8); box-shadow: 0 4px 10px rgba(100, 116, 139, 0.5);">
+            ← Back
+        </button>
+    </div>
+
+    <!-- Game Status Display -->
+    <div id="status-message" class="text-xl font-semibold text-white mb-6 bg-slate-600 p-3 rounded-lg w-full text-center" style="display: none;">
+        Player X's Turn
+    </div>
+
+    <!-- Tic-Tac-Toe Board -->
+    <div id="board" class="board" style="display: none;">
+        <!-- Cells will be dynamically generated by JavaScript -->
+    </div>
+
+    <!-- Reset Button -->
+    <button id="reset-button" class="mt-8 px-6 py-3 text-white font-bold text-lg rounded-xl shadow-lg transition-all duration-300 transform hover:scale-110 active:scale-95" style="display: none; background: linear-gradient(135deg, #1e40af, #3b82f6); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);">
+        ✨ New Game ✨
+    </button>
+</div>
+
+<!-- Win/Loss Modal -->
+<div id="result-modal" class="modal">
+    <div class="modal-content">
+        <h2 id="result-message" class="text-4xl font-bold mb-6" style="color: #fff;"></h2>
+        <button id="close-modal-btn" class="px-8 py-3 text-white font-bold text-lg rounded-xl transition-all duration-300 transform hover:scale-110" style="background: linear-gradient(135deg, #1e40af, #3b82f6); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);">
+            Close
+        </button>
+    </div>
+</div>
+
+<script>
+    // --- Country Image Mapping ---
+    const countryImages = {
+        'Bangladesh': 'images/BD.webp',
+        'China': 'images/China.avif',
+        'Dick': 'images/dick.avif',
+        'India': 'images/india.jpg',
+        'North Korea': 'images/korea.webp',
+        'Russia': 'images/Russia.webp',
+        'USA': 'images/USA.jpg'
+    };
+
+    // --- Game State Variables ---
+    let boardState = Array(9).fill(null);
+    let currentPlayer = 'X';
+    let isGameActive = false;
+    let moveHistory = [];
+    let gameMode = null; // 'ai' or 'two-player'
+    let player1Country = null;
+    let player2Country = null;
+    let isSelectingPlayer = 1; // 1 for player1, 2 for player2
+
+    // --- DOM Elements ---
+    const boardElement = document.getElementById('board');
+    const statusMessageElement = document.getElementById('status-message');
+    const resetButton = document.getElementById('reset-button');
+    const modeSelection = document.getElementById('mode-selection');
+    const countrySelection = document.getElementById('country-selection');
+    const vsAiBtn = document.getElementById('vs-ai-btn');
+    const twoPlayerBtn = document.getElementById('two-player-btn');
+    const randomOpponentBtn = document.getElementById('random-opponent-btn');
+    const backToModeBtn = document.getElementById('back-to-mode-btn');
+    const playerSelectionText = document.getElementById('player-selection-text');
+    const resultModal = document.getElementById('result-modal');
+    const resultMessage = document.getElementById('result-message');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+
+    // --- Winning Combinations ---
+    const winningConditions = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+    ];
+
+    // --- Event Listeners ---
+    vsAiBtn.addEventListener('click', () => {
+        gameMode = 'ai';
+        modeSelection.style.display = 'none';
+        countrySelection.style.display = 'block';
+        randomOpponentBtn.style.display = 'block';
+        playerSelectionText.textContent = 'Select Your Country';
+    });
+
+    twoPlayerBtn.addEventListener('click', () => {
+        gameMode = 'two-player';
+        modeSelection.style.display = 'none';
+        countrySelection.style.display = 'block';
+        randomOpponentBtn.style.display = 'none';
+        playerSelectionText.textContent = 'Player 1: Select Your Country';
+    });
+
+    backToModeBtn.addEventListener('click', () => {
+        countrySelection.style.display = 'none';
+        modeSelection.style.display = 'block';
+        player1Country = null;
+        player2Country = null;
+        isSelectingPlayer = 1;
+    });
+
+    document.querySelectorAll('.country-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const country = e.target.dataset.country;
+            
+            if (isSelectingPlayer === 1) {
+                player1Country = country;
+                
+                if (gameMode === 'two-player') {
+                    isSelectingPlayer = 2;
+                    playerSelectionText.textContent = 'Player 2: Select Your Country';
+                } else {
+                    isSelectingPlayer = 2;
+                    playerSelectionText.textContent = 'Select Opponent Country';
+                }
+            } else if (isSelectingPlayer === 2) {
+                player2Country = country;
+                startGame();
+            }
+        });
+    });
+
+    randomOpponentBtn.addEventListener('click', () => {
+        const countries = Object.keys(countryImages);
+        player2Country = countries[Math.floor(Math.random() * countries.length)];
+        startGame();
+    });
+
+    resetButton.addEventListener('click', resetGame);
+    closeModalBtn.addEventListener('click', () => {
+        resultModal.classList.remove('active');
+    });
+
+    /**
+     * Updates the status message
+     */
+    function updateStatus(message, colorClass = 'text-white') {
+        statusMessageElement.textContent = message;
+        statusMessageElement.className = 'text-xl font-semibold mb-6 p-3 rounded-lg w-full text-center bg-slate-600 ' + colorClass;
+    }
+
+    /**
+     * Renders the board
+     */
+    function renderBoard() {
+        boardElement.innerHTML = '';
+        for (let i = 0; i < 9; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.index = i;
+            cell.addEventListener('click', handleCellClick);
+            boardElement.appendChild(cell);
+        }
+        const playerName = currentPlayer === 'X' ? player1Country : player2Country;
+        updateStatus(`${playerName}'s Turn`);
+    }
+
+    /**
+     * Checks game status
+     */
+    function checkGameStatus() {
+        let roundWon = false;
+        let winningCombo = null;
+
+        for (let i = 0; i < winningConditions.length; i++) {
+            const [a, b, c] = winningConditions[i];
+            
+            if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+                roundWon = true;
+                winningCombo = winningConditions[i];
+                break;
+            }
+        }
+
+        if (roundWon) {
+            isGameActive = false;
+            const winnerCountry = currentPlayer === 'X' ? player1Country : player2Country;
+            
+            // Show popup message
+            if (gameMode === 'ai') {
+                if (currentPlayer === 'X') {
+                    showResultModal('GGWP! 🎉');
+                } else {
+                    showResultModal('Amr BAAAL Khelso ');
+                }
+            } else {
+                showResultModal(`${winnerCountry} Wins! GGWP! 🎉`);
+            }
+            
+            updateStatus(`${winnerCountry} Wins!`, currentPlayer === 'X' ? 'text-red-300 bg-red-700' : 'text-blue-300 bg-blue-700');
+            
+            winningCombo.forEach(index => {
+                const cell = boardElement.querySelector(`[data-index='${index}']`);
+                cell.classList.add('win');
+            });
+            return true;
+        }
+
+        const roundDraw = !boardState.includes(null);
+        if (roundDraw) {
+            isGameActive = false;
+            updateStatus("It's a Draw!", 'text-yellow-300 bg-yellow-700');
+            showResultModal("It's a Draw! 🤝");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Show result modal
+     */
+    function showResultModal(message) {
+        resultMessage.textContent = message;
+        resultModal.classList.add('active');
+    }
+    
+    /**
+     * Highlights the cell that will be removed
+     */
+    function highlightNextRemoval() {
+        const allCells = boardElement.querySelectorAll('.cell');
+        allCells.forEach(cell => cell.classList.remove('will-remove'));
+
+        if (moveHistory.length >= 6) {
+            const nextToRemove = moveHistory[0];
+            const cellToHighlight = boardElement.querySelector(`[data-index='${nextToRemove.index}']`);
+            if (cellToHighlight) {
+                cellToHighlight.classList.add('will-remove');
+            }
+        }
+    }
+
+    /**
+     * Performs a move
+     */
+    function performMove(index) {
+        if (!isGameActive || boardState[index] !== null) return;
+
+        boardState[index] = currentPlayer;
+        moveHistory.push({ index: index, player: currentPlayer });
+
+        if (moveHistory.length > 6) {
+            const oldestMove = moveHistory.shift();
+            boardState[oldestMove.index] = null;
+            
+            const oldCell = boardElement.querySelector(`[data-index='${oldestMove.index}']`);
+            if (oldCell) {
+                oldCell.innerHTML = '';
+                oldCell.classList.remove('x', 'o', 'will-remove');
+            }
+        }
+
+        const cell = boardElement.querySelector(`[data-index='${index}']`);
+        if (cell) {
+            const img = document.createElement('img');
+            const country = currentPlayer === 'X' ? player1Country : player2Country;
+            img.src = countryImages[country];
+            img.alt = currentPlayer;
+            cell.innerHTML = '';
+            cell.appendChild(img);
+            cell.classList.add(currentPlayer.toLowerCase());
+        }
+
+        if (checkGameStatus()) {
+            return;
+        }
+
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        const playerName = currentPlayer === 'X' ? player1Country : player2Country;
+        updateStatus(`${playerName}'s Turn`);
+
+        highlightNextRemoval();
+
+        if (gameMode === 'ai' && currentPlayer === 'O' && isGameActive) {
+            setTimeout(computerMove, 500);
+        }
+    }
+
+    /**
+     * Handles cell click
+     */
+    function handleCellClick(event) {
+        if (gameMode === 'two-player') {
+            if (isGameActive) {
+                const clickedCellIndex = parseInt(event.target.dataset.index);
+                performMove(clickedCellIndex);
+            }
+        } else if (gameMode === 'ai' && currentPlayer === 'X' && isGameActive) {
+            const clickedCellIndex = parseInt(event.target.dataset.index);
+            performMove(clickedCellIndex);
+        }
+    }
+    
+    /**
+     * Computer move (AI)
+     */
+    function computerMove() {
+        if (!isGameActive) return;
+
+        let bestMoveIndex = null;
+        
+        const findBestMove = (player) => {
+            for (const condition of winningConditions) {
+                const [a, b, c] = condition;
+                
+                let takenCount = 0;
+                let emptyIndex = null;
+                
+                for (const index of [a, b, c]) {
+                    if (boardState[index] === player) {
+                        takenCount++;
+                    } else if (boardState[index] === null) {
+                        emptyIndex = index;
+                    }
+                }
+                
+                if (takenCount === 2 && emptyIndex !== null) {
+                    return emptyIndex;
+                }
+            }
+            return null;
+        };
+
+        bestMoveIndex = findBestMove('O');
+        if (bestMoveIndex !== null) {
+            performMove(bestMoveIndex);
+            return;
+        }
+
+        bestMoveIndex = findBestMove('X');
+        if (bestMoveIndex !== null) {
+            performMove(bestMoveIndex);
+            return;
+        }
+
+        if (boardState[4] === null) {
+            performMove(4);
+            return;
+        }
+        
+        const corners = [0, 2, 6, 8];
+        const availableCorners = corners.filter(index => boardState[index] === null);
+        if (availableCorners.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableCorners.length);
+            performMove(availableCorners[randomIndex]);
+            return;
+        }
+
+        const sides = [1, 3, 5, 7];
+        const availableSides = sides.filter(index => boardState[index] === null);
+        if (availableSides.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableSides.length);
+            performMove(availableSides[randomIndex]);
+            return;
+        }
+        
+        checkGameStatus();
+    }
+
+    /**
+     * Resets the game
+     */
+    function resetGame() {
+        boardState = Array(9).fill(null);
+        moveHistory = [];
+        currentPlayer = 'X';
+        isGameActive = false;
+        player1Country = null;
+        player2Country = null;
+        isSelectingPlayer = 1;
+        gameMode = null;
+
+        const cells = boardElement.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            cell.innerHTML = '';
+            cell.classList.remove('x', 'o', 'win', 'will-remove');
+        });
+        
+        countrySelection.style.display = 'none';
+        modeSelection.style.display = 'block';
+        boardElement.style.display = 'none';
+        statusMessageElement.style.display = 'none';
+        resetButton.style.display = 'none';
+    }
+
+    /**
+     * Starts the game
+     */
+    function startGame() {
+        currentPlayer = 'X';
+        isGameActive = true;
+        
+        countrySelection.style.display = 'none';
+        boardElement.style.display = 'grid';
+        statusMessageElement.style.display = 'block';
+        resetButton.style.display = 'block';
+        
+        renderBoard();
+    }
+
+    // --- Initialization ---
+    window.onload = () => {
+        modeSelection.style.display = 'block';
+    };
+
+</script>
+
+</body>
+</html>

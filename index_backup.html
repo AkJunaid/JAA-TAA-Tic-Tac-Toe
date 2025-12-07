@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a polished look, prioritizing responsiveness */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 25%, #3b82f6 50%, #60a5fa 75%, #93c5fd 100%);
+            background-size: 400% 400%;
+            animation: gradient-shift 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .game-container {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(59, 130, 246, 0.2);
+            max-width: 90vw;
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: float 6s ease-in-out infinite;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Keep the board square */
+        }
+
+        .cell {
+            background: linear-gradient(145deg, #5a6d8a, #3e4d63);
+            border-radius: 0.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            font-weight: bold;
+            color: #f1f5f9;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            height: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            padding: 0.5rem;
+        }
+
+        .cell img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .cell:hover::before {
+            left: 100%;
+        }
+
+        .cell:hover:not(.x):not(.o) {
+            background: linear-gradient(145deg, #3b82f6, #2563eb);
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 8px 15px rgba(59, 130, 246, 0.5);
+        }
+
+        .cell:active {
+            transform: scale(0.95);
+        }
+
+        /* Styling for X and O */
+        .cell.x { 
+            animation: pop-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cell.o { 
+            animation: pop-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes pop-in {
+            0% { 
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(10deg);
+            }
+            100% { 
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        /* Style for winning cells */
+        .cell.win {
+            background-color: #10b981; /* Emerald-500 */
+            animation: pulse-win 0.5s infinite alternate;
+        }
+
+        @keyframes pulse-win {
+            from { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            to { box-shadow: 0 0 10px 5px rgba(16, 185, 129, 0.9); }
+        }
+
+        /* Style for cells that will be removed next */
+        .cell.will-remove {
+            background-color: #fbbf24; /* Soft amber/yellow background */
+            animation: warning-pulse 2s ease-in-out infinite alternate;
+            border: 2px solid #f59e0b;
+        }
+
+        @keyframes warning-pulse {
+            from { 
+                box-shadow: 0 0 8px 3px rgba(251, 191, 36, 0.4);
+                opacity: 0.85;
+            }
+            to { 
+                box-shadow: 0 0 12px 5px rgba(251, 191, 36, 0.6);
+                opacity: 0.95;
+            }
+        }
+
+        /* Button animations */
+        button {
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        /* Title animation */
+        h1 {
+            animation: title-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes title-glow {
+            0%, 100% { 
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
+                             0 0 20px rgba(59, 130, 246, 0.5),
+                             0 0 30px rgba(239, 68, 68, 0.3);
+            }
+            50% { 
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.8),
+                             0 0 30px rgba(59, 130, 246, 0.8),
+                             0 0 40px rgba(239, 68, 68, 0.5),
+                             0 0 50px rgba(59, 130, 246, 0.3);
+            }
+        }
+
+        /* Dedication section styling */
+        .dedication {
+            animation: fade-in-up 1s ease-out;
+        }
+
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Status message animation */
+        #status-message {
+            animation: slide-in 0.5s ease-out;
+        }
+
+        @keyframes slide-in {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Board fade-in animation */
+        .board {
+            animation: board-appear 0.6s ease-out;
+        }
+
+        @keyframes board-appear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Choice buttons animation */
+        #choose-first {
+            animation: fade-in-up 0.8s ease-out;
+        }
+
+        /* Utility classes for responsive text sizes */
+        @media (max-width: 480px) {
+            .cell { font-size: 3rem; }
+            .game-container { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container" class="game-container">
+    <h1 class="text-3xl font-extrabold text-white mb-4 text-center" style="background: linear-gradient(90deg, #ef4444, #3b82f6, #60a5fa, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+        JAA TAAA<br>
+        Tic-Tac-Toe (vs AI)
+    </h1>
+    
+    <!-- Dedication -->
+    <div class="dedication text-center mb-6 px-4">
+        <p class="text-lg text-slate-200 italic" style="text-shadow: 0 0 10px rgba(59, 130, 246, 0.4);">
+             Dedicated to <span class="font-semibold" style="background: linear-gradient(90deg, #3b82f6, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Rishat Bhai er Jhari</span> �
+        </p>
+    </div>
+    
+    <!-- Choose Who Goes First -->
+    <div id="choose-first" class="mb-6 w-full">
+        <p class="text-white text-center mb-3 font-semibold" style="text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);">Who goes first?</p>
+        <div class="flex gap-3 justify-center">
+            <button id="human-first" class="px-6 py-2 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-110 hover:rotate-2" style="background: linear-gradient(135deg, #dc2626, #ef4444); box-shadow: 0 4px 15px rgba(220, 38, 38, 0.5);">
+                Human (X)
+            </button>
+            <button id="ai-first" class="px-6 py-2 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-110 hover:-rotate-2" style="background: linear-gradient(135deg, #2563eb, #3b82f6); box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5);">
+                AI (O)
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Status Display -->
+    <div id="status-message" class="text-xl font-semibold text-white mb-6 bg-slate-600 p-3 rounded-lg w-full text-center" style="display: none;">
+        Player X's Turn
+    </div>
+
+    <!-- Tic-Tac-Toe Board -->
+    <div id="board" class="board" style="display: none;">
+        <!-- Cells will be dynamically generated by JavaScript -->
+    </div>
+
+    <!-- Reset Button -->
+    <button id="reset-button" class="mt-8 px-6 py-3 text-white font-bold text-lg rounded-xl shadow-lg transition-all duration-300 transform hover:scale-110 active:scale-95" style="display: none; background: linear-gradient(135deg, #1e40af, #3b82f6); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);">
+        ✨ New Game ✨
+    </button>
+</div>
+
+<script>
+    // --- Game State Variables ---
+    let boardState = Array(9).fill(null); // Represents the 3x3 board: [null, 'X', 'O', ...]
+    let currentPlayer = 'X'; // 'X' (Human) or 'O' (AI)
+    let isGameActive = false; // Flag to control game flow
+    let moveHistory = []; // Track move order for the 4th move removal feature
+    let firstPlayer = null; // Track who goes first
+
+    // --- DOM Elements ---
+    const boardElement = document.getElementById('board');
+    const statusMessageElement = document.getElementById('status-message');
+    const resetButton = document.getElementById('reset-button');
+    const chooseFirstElement = document.getElementById('choose-first');
+    const humanFirstButton = document.getElementById('human-first');
+    const aiFirstButton = document.getElementById('ai-first');
+
+    // --- Winning Combinations (Indices of the boardState array) ---
+    const winningConditions = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+        [0, 4, 8], [2, 4, 6]            // Diagonals
+    ];
+
+    /**
+     * Updates the status message displayed to the user.
+     * @param {string} message - The text to display.
+     * @param {string} colorClass - Optional Tailwind class for styling (e.g., 'text-red-400').
+     */
+    function updateStatus(message, colorClass = 'text-white') {
+        statusMessageElement.textContent = message;
+        // Reset classes and apply new one
+        statusMessageElement.className = 'text-xl font-semibold mb-6 p-3 rounded-lg w-full text-center bg-slate-600 ' + colorClass;
+    }
+
+    /**
+     * Renders the initial 3x3 grid cells and attaches click handlers.
+     */
+    function renderBoard() {
+        boardElement.innerHTML = ''; // Clear previous board
+        for (let i = 0; i < 9; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.index = i; // Store the array index on the DOM element
+            cell.addEventListener('click', handleCellClick);
+            boardElement.appendChild(cell);
+        }
+        updateStatus("Player X's Turn");
+    }
+
+    /**
+     * Checks if the current board state results in a win or a draw.
+     * @returns {boolean} True if the game is over (win or draw), false otherwise.
+     */
+    function checkGameStatus() {
+        let roundWon = false;
+        let winningCombo = null;
+
+        // 1. Check for a Win
+        for (let i = 0; i < winningConditions.length; i++) {
+            const [a, b, c] = winningConditions[i];
+            
+            // Check if all three cells are non-null AND they are equal
+            if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+                roundWon = true;
+                winningCombo = winningConditions[i];
+                break;
+            }
+        }
+
+        if (roundWon) {
+            isGameActive = false;
+            updateStatus(`Player ${currentPlayer} Wins!`, currentPlayer === 'X' ? 'text-red-300 bg-red-700' : 'text-blue-300 bg-blue-700');
+            
+            // Highlight the winning cells
+            winningCombo.forEach(index => {
+                const cell = boardElement.querySelector(`[data-index='${index}']`);
+                cell.classList.add('win');
+            });
+            return true;
+        }
+
+        // 2. Check for a Draw (No null values left)
+        const roundDraw = !boardState.includes(null);
+        if (roundDraw) {
+            isGameActive = false;
+            updateStatus("It's a Draw!", 'text-yellow-300 bg-yellow-700');
+            return true;
+        }
+
+        return false; // Game is still ongoing
+    }
+    
+    /**
+     * Highlights the cell that will be removed on the next move
+     */
+    function highlightNextRemoval() {
+        // Clear all previous warnings
+        const allCells = boardElement.querySelectorAll('.cell');
+        allCells.forEach(cell => cell.classList.remove('will-remove'));
+
+        // If we have 6 moves (both players have 3 pieces), highlight the oldest
+        if (moveHistory.length >= 6) {
+            const nextToRemove = moveHistory[0];
+            const cellToHighlight = boardElement.querySelector(`[data-index='${nextToRemove.index}']`);
+            if (cellToHighlight) {
+                cellToHighlight.classList.add('will-remove');
+            }
+        }
+    }
+
+    /**
+     * Executes the actual move, updates the board/UI, checks status, and switches turns.
+     * @param {number} index - The index on the board (0-8) where the move is placed.
+     */
+    function performMove(index) {
+        if (!isGameActive || boardState[index] !== null) return;
+
+        // 1. Update Game State
+        boardState[index] = currentPlayer;
+        moveHistory.push({ index: index, player: currentPlayer });
+
+        // 2. Check if we need to remove the oldest move (4th move removes 1st move)
+        if (moveHistory.length > 6) { // Each player gets max 3 pieces on board
+            const oldestMove = moveHistory.shift();
+            boardState[oldestMove.index] = null;
+            
+            const oldCell = boardElement.querySelector(`[data-index='${oldestMove.index}']`);
+            if (oldCell) {
+                oldCell.innerHTML = '';
+                oldCell.classList.remove('x', 'o', 'will-remove');
+            }
+        }
+
+        // 3. Update UI
+        const cell = boardElement.querySelector(`[data-index='${index}']`);
+        if (cell) {
+            // Create an img element instead of text
+            const img = document.createElement('img');
+            if (currentPlayer === 'X') {
+                img.src = 'images/607719-djt.jpg'; // Trump image for X
+                img.alt = 'X';
+            } else {
+                img.src = 'images/putin-face.webp'; // Putin image for O
+                img.alt = 'O';
+            }
+            cell.innerHTML = '';
+            cell.appendChild(img);
+            cell.classList.add(currentPlayer.toLowerCase());
+        }
+
+        // 4. Check for Win/Draw
+        if (checkGameStatus()) {
+            return;
+        }
+
+        // 5. Change Player Turn
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        updateStatus(`Player ${currentPlayer}'s Turn`);
+
+        // 6. Highlight the next cell that will be removed
+        highlightNextRemoval();
+
+        // 7. If it's the computer's turn, make a move after a short delay
+        if (currentPlayer === 'O' && isGameActive) {
+            // Delay for better user experience
+            setTimeout(computerMove, 500); 
+        }
+    }
+
+
+    /**
+     * Handles the click event on a game cell by the Human Player ('X').
+     * @param {Event} event - The click event object.
+     */
+    function handleCellClick(event) {
+        // Only allow human moves if it's player 'X' and the game is active
+        if (currentPlayer === 'X' && isGameActive) {
+            const clickedCellIndex = parseInt(event.target.dataset.index);
+            performMove(clickedCellIndex);
+        }
+    }
+    
+    /**
+     * Finds the best move for the computer ('O') using a simple heuristic strategy.
+     */
+    function computerMove() {
+        if (!isGameActive) return;
+
+        let bestMoveIndex = null;
+        
+        // Helper function to find winning/blocking moves
+        const findBestMove = (player) => {
+            for (const condition of winningConditions) {
+                const [a, b, c] = condition;
+                
+                let takenCount = 0;
+                let emptyIndex = null;
+                
+                // Check the three indices in the condition
+                for (const index of [a, b, c]) {
+                    if (boardState[index] === player) {
+                        takenCount++;
+                    } else if (boardState[index] === null) {
+                        emptyIndex = index; // The potential winning/blocking spot
+                    }
+                }
+                
+                // If the player has two in a row and the third spot is empty, that's the move!
+                if (takenCount === 2 && emptyIndex !== null) {
+                    return emptyIndex;
+                }
+            }
+            return null;
+        };
+
+        // --- AI Strategy ---
+        
+        // 1. Check for immediate win (O)
+        bestMoveIndex = findBestMove('O');
+        if (bestMoveIndex !== null) {
+            performMove(bestMoveIndex);
+            return;
+        }
+
+        // 2. Check to block opponent's win (X)
+        bestMoveIndex = findBestMove('X');
+        if (bestMoveIndex !== null) {
+            performMove(bestMoveIndex);
+            return;
+        }
+
+        // 3. Take the Center (4)
+        if (boardState[4] === null) {
+            performMove(4);
+            return;
+        }
+        
+        // 4. Take a Corner (0, 2, 6, 8)
+        const corners = [0, 2, 6, 8];
+        const availableCorners = corners.filter(index => boardState[index] === null);
+        if (availableCorners.length > 0) {
+            // Pick a random available corner
+            const randomIndex = Math.floor(Math.random() * availableCorners.length);
+            performMove(availableCorners[randomIndex]);
+            return;
+        }
+
+        // 5. Take any remaining side (1, 3, 5, 7)
+        const sides = [1, 3, 5, 7];
+        const availableSides = sides.filter(index => boardState[index] === null);
+        if (availableSides.length > 0) {
+            // Pick a random available side
+            const randomIndex = Math.floor(Math.random() * availableSides.length);
+            performMove(availableSides[randomIndex]);
+            return;
+        }
+        
+        // If the board is full (should have been caught by checkGameStatus, but for safety)
+        checkGameStatus();
+    }
+
+    /**
+     * Resets the entire game to its initial state.
+     */
+    function resetGame() {
+        boardState = Array(9).fill(null);
+        moveHistory = [];
+        currentPlayer = 'X';
+        isGameActive = false;
+        firstPlayer = null;
+
+        // Clear all cell content and classes
+        const cells = boardElement.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            cell.textContent = '';
+            cell.classList.remove('x', 'o', 'win');
+        });
+        
+        // Show choice screen, hide game
+        chooseFirstElement.style.display = 'block';
+        boardElement.style.display = 'none';
+        statusMessageElement.style.display = 'none';
+        resetButton.style.display = 'none';
+    }
+
+    /**
+     * Starts the game with the chosen first player
+     */
+    function startGame(playerGoesFirst) {
+        firstPlayer = playerGoesFirst;
+        currentPlayer = playerGoesFirst;
+        isGameActive = true;
+        
+        // Hide choice screen, show game
+        chooseFirstElement.style.display = 'none';
+        boardElement.style.display = 'grid';
+        statusMessageElement.style.display = 'block';
+        resetButton.style.display = 'block';
+        
+        renderBoard();
+        updateStatus(`Player ${currentPlayer}'s Turn`);
+        
+        // If AI goes first, make a move
+        if (currentPlayer === 'O') {
+            setTimeout(computerMove, 500);
+        }
+    }
+
+    // --- Event Listeners ---
+    resetButton.addEventListener('click', resetGame);
+    humanFirstButton.addEventListener('click', () => startGame('X'));
+    aiFirstButton.addEventListener('click', () => startGame('O'));
+
+    // --- Initialization ---
+    // Show the choice screen on load
+    window.onload = () => {
+        chooseFirstElement.style.display = 'block';
+    };
+
+</script>
+
+</body>
+</html>
