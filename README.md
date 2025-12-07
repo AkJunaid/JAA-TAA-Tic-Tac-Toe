@@ -104,26 +104,4 @@ Works best on modern browsers:
 - Safari 14+
 - Opera 76+
 
-## Responsive Design
 
-The game is fully responsive and works on:
-- Desktop computers
-- Tablets
-- Mobile phones
-
-## Credits
-
-**Game Design & Development:** Custom implementation
-**Inspiration:** Rishat Bhai
-**Special Thanks:** For the motivation through constructive criticism
-
-## Version History
-
-### Version 1.0
-- Initial release
-- AI vs Player mode
-- Two-player mode
-- Country selection system
-- Dynamic board with piece removal
-- Custom win/loss messages
-- Animated UI with modern design
